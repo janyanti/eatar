@@ -3,13 +3,17 @@
 #########################
 import json, datetime, flask, pymongo, dns
 from flask import request, url_for, jsonify
+from yelpapi import YelpAPI
+from collections import Counter
 from flask_api import FlaskAPI, status, exceptions
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from constants import *
 #########################
 
 app = FlaskAPI(__name__)
-CORS(app)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
+yelp_api = YelpAPI(API_KEY)
+
 
 #########################
 ##   MongoDB Database  ##
@@ -17,7 +21,9 @@ CORS(app)
 
 client = pymongo.MongoClient(MONGO_URL)
 db = client['Eatar_test'] # Database Name
-users = db['users'] # Collection name
+users = db['users'] # User Collection
+queries = db['query'] # Query Collection
+
 
 """
 Compare two string values;
@@ -25,30 +31,6 @@ Ignore case
 """
 def str_cmp(s1,s2):
     return s1.lower() == s2.lower()
-
-def is_valid_user(data):
-    #TODO implement with mongoDB database verification
-    res = True
-    status = 403
-    voter_id = data['ID']
-    first_name = data['first_name']
-    last_name = data['last_name']
-    DOB = data['DOB']
-    voter = users.find_one({"ID": voter_id})
-    if voter == None:
-        res = False
-        return (res, status)
-    if voter_id in voted:
-        res = False
-        status = 400
-        return (res, status)
-    data_first = voter['first_name']
-    data_last = voter['last_name']
-    data_dob = voter['DOB']
-    res = str_cmp(data_first,first_name) and str_cmp(data_last, last_name) and str_cmp(data_dob, DOB)
-    if res:
-        voted.append(voter_id)
-    return (res, status)
 
 """
 delete_user_data: request -> respone
@@ -96,6 +78,7 @@ def auth_user_data(request):
     user = dict()
     for key in AUTH_KEYS:
         user[key] = request.get_json(force=True)[key]
+        print(user)
     result = users.find_one({"email": user['email']})
     if user == None:
         return ('User Authenticfication Failed: User Not Found exists', 400)
@@ -104,6 +87,98 @@ def auth_user_data(request):
         return ('User Authenticfication Failed: Incorrect Credentials', 400)
     return ('User Authenticfication Successful', 201)
 
+"""
+query_user_data: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def query_user_data(request):
+
+    query = dict()
+    print(request.get_json(force=True))
+    for key in QUERY_KEYS:
+        query[key] = request.get_json(force=True)[key]
+
+    result = queries.insert_one(query)
+    if not result.inserted_id:
+        return ('Query Operartion Failed', 400)
+    return ('Successfuly Pushed Query', 201)
+
+"""
+get_query_data: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def get_query_data(request):
+
+    res = []
+    id = request.get_json(force=True)['group_id']
+    groups = queries.find({'group_id' : id})
+    for val in groups:
+        res.append(val)
+    print(len(res))
+    return jsonify(len(res))
+
+
+"""
+exec_query: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def exec_query(request):
+
+    res = []
+    id = request.get_json(force=True)['group_id']
+    groups = queries.find({'group_id' : id})
+    print(request)
+    for val in groups:
+        res.append(val)
+    print(res)
+    return exec_yelp_query(res)
+
+
+
+def exec_yelp_query(list):
+    counter = Counter()
+    trackers = {}
+    for item in list:
+        results1 = None
+        results2 = None
+        results3 = None
+        if item['location'] is None:
+            results1 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant", attributes='deals')
+            results2 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant")
+            results3 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant", attributes='hot_and_new')
+        else:
+            results1 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant", attributes='deals')
+            results2 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant")
+            results3 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant", attributes='hot_and_new')
+
+        for item in results1["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+        for item in results2["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+        for item in results3["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+
+    itemMaxValue = max(counter.items(), key=lambda x: x[1])
+
+    listOfKeys = []
+    for key, value in counter.items():
+        if value == itemMaxValue[1]:
+            listOfKeys.append(trackers[key])
+    result = []
+    for item in listOfKeys:
+        price = item['price'] if 'price' in item else 'N/A'
+        result.append({'name':item['name'], 'rating':item['rating'], 'price':price , 'address':item['location']['display_address']})
+    print(result)
+    return jsonify(result)
 
 
 #########################
@@ -111,10 +186,12 @@ def auth_user_data(request):
 #########################
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def default():
     return "<h1>Test Server</h1><p>This is just a test!</p>"
 
 @app.route('/register', methods=['POST', 'DELETE'])
+@cross_origin()
 def addUser():
     """
     Add new user/remove in the database
@@ -128,6 +205,7 @@ def addUser():
 
 
 @app.route('/authenticate', methods=['POST'])
+@cross_origin()
 def authUser():
     """
     authenticate user in the database
@@ -136,25 +214,45 @@ def authUser():
         (result, status) = auth_user_data(request)
         return jsonify(result), status # HTTP Status Created [201]
 
-@app.route('/blocks', methods=['GET', 'POST'])
-def appendBlock():
+@app.route('/query', methods=['POST'])
+@cross_origin()
+def queryUser():
     """
-    Add new block to exisiting blockchain
+    authenticate user in the database
     """
-    if request.method == 'POST':
-        (result, status) = parse_vote_data(request)
+    if request.method == "POST":
+        (result, status) = query_user_data(request)
         return jsonify(result), status # HTTP Status Created [201]
 
-    return jsonify(votechain.getChain()), 200
+@app.route('/queries', methods=['POST'])
+@cross_origin()
+def getUserQueries():
+    """
+    get number of users in group_id
+    """
+    if request.method == "POST":
+        result = get_query_data(request)
+        if result:
+            status = 200
+        else:
+            status = 400
+        return result, status # HTTP Status Created [201]
 
-@app.route("/block/<int:key>/", methods=['GET'])
-def block_detail(key):
+@app.route('/execute_query', methods=['POST'])
+@cross_origin()
+def execQuery():
     """
-    Retrieve block instances
+    execute search query database
     """
-    if key not in blocks:
-        raise exceptions.NotFound()
-    return block_digest(key)
+
+    if request.method == "POST":
+        result = exec_query(request)
+        if result:
+            status = 200
+        else:
+            status = 400
+        return result, status # HTTP Status Created [201]
+
 
 #########################
 ##        Main         ##
