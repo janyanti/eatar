@@ -36,13 +36,20 @@ class LoginForm extends React.Component {
             </Header>
             <Form size='large' onSubmit={this.onSubmit}>
               <Segment stacked>
-                <Form.Input fluid icon='user' iconPosition='left' placeholder='E-mail address' />
+                <Form.Input
+                fluid icon='user'
+                iconPosition='left'
+                placeholder='E-mail address'
+                name='email'
+                onChange={this.onChange}/>
                 <Form.Input
                   fluid
                   icon='lock'
                   iconPosition='left'
                   placeholder='Password'
+                  name='password'
                   type='password'
+                  onChange={this.onChange}
                 />
                 <Button color='red' fluid size='large'>
                   Login

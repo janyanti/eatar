@@ -4,12 +4,13 @@
 import json, datetime, flask, pymongo, dns
 from flask import request, url_for, jsonify
 from flask_api import FlaskAPI, status, exceptions
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from constants import *
 #########################
 
 app = FlaskAPI(__name__)
-CORS(app)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 #########################
 ##   MongoDB Database  ##
@@ -25,30 +26,6 @@ Ignore case
 """
 def str_cmp(s1,s2):
     return s1.lower() == s2.lower()
-
-def is_valid_user(data):
-    #TODO implement with mongoDB database verification
-    res = True
-    status = 403
-    voter_id = data['ID']
-    first_name = data['first_name']
-    last_name = data['last_name']
-    DOB = data['DOB']
-    voter = users.find_one({"ID": voter_id})
-    if voter == None:
-        res = False
-        return (res, status)
-    if voter_id in voted:
-        res = False
-        status = 400
-        return (res, status)
-    data_first = voter['first_name']
-    data_last = voter['last_name']
-    data_dob = voter['DOB']
-    res = str_cmp(data_first,first_name) and str_cmp(data_last, last_name) and str_cmp(data_dob, DOB)
-    if res:
-        voted.append(voter_id)
-    return (res, status)
 
 """
 delete_user_data: request -> respone
@@ -96,6 +73,7 @@ def auth_user_data(request):
     user = dict()
     for key in AUTH_KEYS:
         user[key] = request.get_json(force=True)[key]
+        print(user)
     result = users.find_one({"email": user['email']})
     if user == None:
         return ('User Authenticfication Failed: User Not Found exists', 400)
@@ -111,10 +89,12 @@ def auth_user_data(request):
 #########################
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def default():
     return "<h1>Test Server</h1><p>This is just a test!</p>"
 
 @app.route('/register', methods=['POST', 'DELETE'])
+@cross_origin()
 def addUser():
     """
     Add new user/remove in the database
@@ -128,6 +108,7 @@ def addUser():
 
 
 @app.route('/authenticate', methods=['POST'])
+@cross_origin()
 def authUser():
     """
     authenticate user in the database
@@ -136,25 +117,6 @@ def authUser():
         (result, status) = auth_user_data(request)
         return jsonify(result), status # HTTP Status Created [201]
 
-@app.route('/blocks', methods=['GET', 'POST'])
-def appendBlock():
-    """
-    Add new block to exisiting blockchain
-    """
-    if request.method == 'POST':
-        (result, status) = parse_vote_data(request)
-        return jsonify(result), status # HTTP Status Created [201]
-
-    return jsonify(votechain.getChain()), 200
-
-@app.route("/block/<int:key>/", methods=['GET'])
-def block_detail(key):
-    """
-    Retrieve block instances
-    """
-    if key not in blocks:
-        raise exceptions.NotFound()
-    return block_digest(key)
 
 #########################
 ##        Main         ##

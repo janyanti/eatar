@@ -23,7 +23,7 @@ class RegisterForm extends Component{
       last_name: this.state.last_name,
       password: this.state.pass,
       email: this.state.email,
-      user_id: this.state.user_id = Math.random()
+      user_id: this.state.user_id = Math.ceil(Math.random() * Number.MAX_VALUE)
     }
     this.props.onSubmit(user_data);
   }

@@ -3,6 +3,7 @@ import HomepageLayout from './Components/Home'
 import LoginForm from './Components/LoginForm'
 import RegisterForm from './Components/RegisterForm'
 import LoaderView from './Components/Loader'
+import Select from './Components/Select'
 import logo from './logo.svg';
 import './App.css';
 
@@ -33,6 +34,7 @@ class App extends React.Component {
         .then(response => (response.json()))
         .then((data, stats) => console.log("Success: ", data, stats))
         .catch( err => console.log("Error: ", err))
+        .then(this.setState({page: 'home'}))
   }
 
   auth_user(data){
@@ -51,12 +53,13 @@ class App extends React.Component {
         .then(response => (response.json()))
         .then((data, stats) => console.log("Success: ", data, stats))
         .catch( err => console.log("Error: ", err))
+        .then(this.setState({page: 'select'}))
   }
 
   change_state(state){
 
     this.setState({ page: 'loading'})
-    setTimeout(() => this.setState({ page: state}), 1000)
+    setTimeout(() => this.setState({ page: state}), 1250)
     console.log(`State changed to ${state}`)
 
   }
@@ -87,6 +90,12 @@ class App extends React.Component {
       </div>
     )
 
+    let select = (
+      <div>
+        <Select/>
+      </div>
+    )
+
     switch (this.state.page) {
       case "home":
         return home
@@ -96,6 +105,8 @@ class App extends React.Component {
         return sign_up
       case "loading":
         return loader
+      case "select":
+        return select
       default:
         return home
     }
