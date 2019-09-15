@@ -1,5 +1,5 @@
 import React from 'react'
-import { Dimmer, Loader, Image, Segment, Form, Grid, Card, Button } from 'semantic-ui-react'
+import { Dimmer, Loader, Image, Segment, Form, Grid, Card, Button, Table, Header, Rating } from 'semantic-ui-react'
 
 import eatar_logo from '../images/eatar-logo.png'
 
@@ -9,7 +9,8 @@ class Select extends React.Component {
     this.state = {
       coords: false,
       location: "Boston, MA",
-      members: 0
+      members: 0,
+      selection: []
     }
     this.getCoords = this.getCoords.bind(this)
     this.onChange = this.onChange.bind(this)
@@ -71,6 +72,9 @@ class Select extends React.Component {
         .then(response => (response.json()))
         .catch( err => console.log("Error: ", err))
         .then((data, stats) => {
+          if (data){
+            this.setState({ selection: data })
+          }
         })
   }
 
@@ -136,6 +140,50 @@ class Select extends React.Component {
       {  key: 'vie', text: 'Vietnamese', value: 'vietnamese' }
     ]
 
+    let table_items = null
+    if (this.state.selection) {
+      table_items = this.state.selection.map((item) =>
+        (
+        <Table.Row>
+          <Table.Cell>
+            <Header as='h2' textAlign='left'>
+              {item.name}
+            </Header>
+          </Table.Cell>
+          <Table.Cell singleLine>{item.price}</Table.Cell>
+          <Table.Cell>
+            <Rating size='large' icon='star' defaultRating={item.rating} maxRating={5} />
+          </Table.Cell>
+          <Table.Cell textAlign='left'>
+            {item.address.join(" ")}
+          </Table.Cell>
+          <Table.Cell>
+          </Table.Cell>
+        </Table.Row>
+        ))
+    }
+
+
+    let table = null
+    if (this.state.selection.length > 0  ) {
+      table = (
+        <Table cell padded>
+          <Table.Header>
+          <Table.Row>
+          <Table.HeaderCell singleLine>Name</Table.HeaderCell>
+          <Table.HeaderCell>Price</Table.HeaderCell>
+          <Table.HeaderCell>Rating</Table.HeaderCell>
+          <Table.HeaderCell>Address</Table.HeaderCell>
+          <Table.HeaderCell>Comments</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {table_items}
+        </Table.Body>
+        </Table>
+      )
+    }
+
 
     let side_panel =
       (
@@ -161,9 +209,9 @@ class Select extends React.Component {
     return (
       <div className="Select">
         <Segment>
-          <Grid  columns={2} style={{ height: '75vh' }} verticalAlign='middle'>
+          <Grid columns={2} >
             <Grid.Row>
-              <Grid.Column textAlign='left' style={{ maxWidth: 650 }}>
+              <Grid.Column textAlign='left'>
               <Form onSubmit={this.onSubmit}>
               <Form.Group widths='equal'>
                 <Form.Input fluid label='Group Name' name='group_id' placeholder='Super Awesome Lunch!' onChange={this.onChange}/>
@@ -207,6 +255,7 @@ class Select extends React.Component {
             </Grid.Row>
           </Grid>
         </Segment>
+        {table}
       </div>
     )
   }

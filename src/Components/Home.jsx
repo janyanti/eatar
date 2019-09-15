@@ -37,7 +37,7 @@ const HomepageHeading = ({ mobile }) => (
   <Container text>
     <Header
       as='h1'
-      content='EAT.AR'
+      content='EAT.IO'
       inverted
       style={{
         fontSize: mobile ? '2em' : '4em',
