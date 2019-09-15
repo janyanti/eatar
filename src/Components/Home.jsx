@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import React, { Component } from 'react'
+import LoginForm from './LoginForm'
 import {
   Button,
   Container,
@@ -14,6 +15,7 @@ import {
   Segment,
   Sidebar,
   Visibility,
+  Modal,
 } from 'semantic-ui-react'
 
 import eatar_logo from '../images/eatar-logo.png'
@@ -70,7 +72,21 @@ HomepageHeading.propTypes = {
  * It can be more complicated, but you can create really flexible markup.
  */
 class DesktopContainer extends Component {
-  state = {}
+  constructor(props){
+    super(props)
+    this.state = {}
+    this.onLoginClick = this.onLoginClick.bind(this)
+    this.onRegisterClick = this.onRegisterClick.bind(this)
+
+  }
+
+  onLoginClick(){
+    this.props.onState('login')
+  }
+
+  onRegisterClick(){
+    this.props.onState('sign_up')
+  }
 
   hideFixedMenu = () => this.setState({ fixed: false })
   showFixedMenu = () => this.setState({ fixed: true })
@@ -105,10 +121,10 @@ class DesktopContainer extends Component {
                 </Menu.Item>
                 <Menu.Item as='a'>About</Menu.Item>
                 <Menu.Item position='right'>
-                  <Button as='a' inverted={!fixed}>
-                    Log in
+                  <Button as='a'  inverted primary={fixed} style={{ marginLeft: '0.5em' }} onClick={this.onLoginClick}>
+                    Login
                   </Button>
-                  <Button as='a'  primary={fixed} style={{ marginLeft: '0.5em' }}>
+                  <Button as='a'  primary={fixed} style={{ marginLeft: '0.5em' }} onClick={this.onRegisterClick}>
                     Sign Up
                   </Button>
                 </Menu.Item>
@@ -197,20 +213,37 @@ MobileContainer.propTypes = {
   children: PropTypes.node,
 }
 
-const ResponsiveContainer = ({ children }) => (
-  <div>
-    <DesktopContainer>{children}</DesktopContainer>
-    <MobileContainer>{children}</MobileContainer>
-  </div>
-)
+class ResponsiveContainer extends React.Component {
+    constructor(props){
+      super(props)
+    }
+
+    render() {
+      return (
+        <div>
+          <DesktopContainer onState={this.props.onState}>{this.props.children}</DesktopContainer>
+          <MobileContainer onState={this.props.onState}>{this.props.children}</MobileContainer>
+        </div>
+      )
+    }
+}
+
 
 ResponsiveContainer.propTypes = {
   children: PropTypes.node,
 }
 
-const HomepageLayout = () => (
-  <ResponsiveContainer>
-    <Segment style={{ padding: '8em 0em' }} vertical>
+class HomepageLayout extends React.Component{
+
+  constructor(props){
+    super(props)
+    this.state = {}
+  }
+
+  render(){
+    let children = (
+      <div>
+      <Segment style={{ padding: '8em 0em' }} vertical>
       <Grid container stackable verticalAlign='middle'>
         <Grid.Row>
           <Grid.Column width={8}>
@@ -329,6 +362,14 @@ const HomepageLayout = () => (
         </Grid>
       </Container>
     </Segment>
-  </ResponsiveContainer>
-)
+    </div>
+   )
+
+    return (
+
+      <ResponsiveContainer children={children} onState={this.props.onState}>
+      </ResponsiveContainer>
+    )
+  }
+}
 export default HomepageLayout
