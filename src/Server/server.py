@@ -162,10 +162,10 @@ def exec_yelp_query(list):
             if item['name'] not in trackers:
                 trackers[item['name']] = item
             counter[item['name']] += 1
-        for item in results3["businesses"]:
-            if item['name'] not in trackers:
-                trackers[item['name']] = item
-            counter[item['name']] += 1
+        # for item in results3["businesses"]:
+        #     if item['name'] not in trackers:
+        #         trackers[item['name']] = item
+        #     counter[item['name']] += 1
 
     itemMaxValue = max(counter.items(), key=lambda x: x[1])
 

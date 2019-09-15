@@ -10,7 +10,8 @@ class Select extends React.Component {
       coords: false,
       location: "Boston, MA",
       members: 0,
-      selection: []
+      selection: [],
+      discounts: [10, 15, 20, 5, 10, 25, 10, 5, 15, 10]
     }
     this.getCoords = this.getCoords.bind(this)
     this.onChange = this.onChange.bind(this)
@@ -73,6 +74,10 @@ class Select extends React.Component {
         .catch( err => console.log("Error: ", err))
         .then((data, stats) => {
           if (data){
+            data.forEach((item) =>
+            {
+              item.discount = this.state.discounts[Math.floor(Math.random()*this.state.discounts.length)]
+            })
             this.setState({ selection: data })
           }
         })
@@ -158,6 +163,7 @@ class Select extends React.Component {
             {item.address.join(" ")}
           </Table.Cell>
           <Table.Cell>
+            {`${item.discount}% OFF`}
           </Table.Cell>
         </Table.Row>
         ))
