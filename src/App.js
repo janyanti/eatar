@@ -12,7 +12,7 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      page: "select",
+      page: "home",
       user: ""
     }
     this.change_state = this.change_state.bind(this)
