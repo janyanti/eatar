@@ -38,7 +38,7 @@ const HomepageHeading = ({ mobile }) => (
   <Container text>
     <Header
       as='h1'
-      content='EAT.AR'
+      content='EAT.IO'
       inverted
       style={{
         fontSize: mobile ? '2em' : '4em',
@@ -174,8 +174,8 @@ class MobileContainer extends Component {
             Home
           </Menu.Item>
           <Menu.Item as='a'>About</Menu.Item>
-          <Menu.Item as='a'>Log in</Menu.Item>
-          <Menu.Item as='a'>Sign Up</Menu.Item>
+          <Menu.Item as='a' >Login</Menu.Item>
+          <Menu.Item as='a' >Sign Up</Menu.Item>
         </Sidebar>
 
         <Sidebar.Pusher dimmed={sidebarOpened}>
@@ -191,10 +191,10 @@ class MobileContainer extends Component {
                   <Icon name='sidebar' />
                 </Menu.Item>
                 <Menu.Item position='right'>
-                  <Button as='a' inverted>
+                  <Button onClick={this.onLoginClick} as='a' inverted>
                     Log in
                   </Button>
-                  <Button as='a' inverted style={{ marginLeft: '0.5em' }}>
+                  <Button onClick={this.onRegisterClick} as='a' inverted style={{ marginLeft: '0.5em' }}>
                     Sign Up
                   </Button>
                 </Menu.Item>
@@ -300,14 +300,17 @@ class HomepageLayout extends React.Component{
               <Header inverted as='h4' content='About' />
               <List link inverted>
                 <List.Item as='a'>Sitemap</List.Item>
+                <List.Item as='a'>Contact Us</List.Item>
                 <List.Item as='a'>Newsroom</List.Item>
                 <List.Item as='a'>Blog</List.Item>
                 <List.Item as='a'>Careers</List.Item>
+
               </List>
             </Grid.Column>
             <Grid.Column width={3}>
               <Header inverted as='h4' content='Services' />
               <List link inverted>
+                <List.Item as='a'>How To Access</List.Item>
                 <List.Item as='a'>Roulette</List.Item>
                 <List.Item as='a'>Yelp</List.Item>
                 <List.Item as='a'>Azure</List.Item>
@@ -316,6 +319,10 @@ class HomepageLayout extends React.Component{
             </Grid.Column>
             <Grid.Column width={7}>
               <Header as='h4' inverted>
+                Footer
+              </Header>
+              <p>
+                For the memes
                 United States		English
               </Header>
               <p>
