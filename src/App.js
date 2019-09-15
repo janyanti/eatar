@@ -11,9 +11,13 @@ import './App.css';
 class App extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { page: "home"}
+    this.state = {
+      page: "select",
+      user: ""
+    }
     this.change_state = this.change_state.bind(this)
     this.add_user = this.add_user.bind(this)
+    this.add_query = this.add_query.bind(this)
     this.auth_user = this.auth_user.bind(this)
 
   }
@@ -34,7 +38,7 @@ class App extends React.Component {
         .then(response => (response.json()))
         .then((data, stats) => console.log("Success: ", data, stats))
         .catch( err => console.log("Error: ", err))
-        .then(this.setState({page: 'home'}))
+        .then(this.change_state('home'))
   }
 
   auth_user(data){
@@ -53,7 +57,43 @@ class App extends React.Component {
         .then(response => (response.json()))
         .then((data, stats) => console.log("Success: ", data, stats))
         .catch( err => console.log("Error: ", err))
-        .then(this.setState({page: 'select'}))
+        .then(this.change_state('select'))
+  }
+
+  add_query(data){
+    const json = JSON.stringify(data)
+    let url = 'http://localhost:5000/query'
+    let options = {
+      method: 'POST',
+      headers:
+       { 'cache-control': 'no-cache',
+         'Content-Type': 'application/json'
+       },
+      body: json
+      };
+
+      fetch(url, options)
+        .then(response => (response.json()))
+        .then((data, stats) => console.log("Success: ", data, stats))
+        .catch( err => console.log("Error: ", err))
+  }
+
+    get_members(data){
+    const json = JSON.stringify(data)
+    let url = 'http://localhost:5000/query'
+    let options = {
+      method: 'POST',
+      headers:
+       { 'cache-control': 'no-cache',
+         'Content-Type': 'application/json'
+       },
+      body: json
+      };
+
+      fetch(url, options)
+        .then(response => (response.json()))
+        .then((data, stats) => console.log("Success: ", data, stats))
+        .catch( err => console.log("Error: ", err))
   }
 
   change_state(state){
@@ -92,7 +132,7 @@ class App extends React.Component {
 
     let select = (
       <div>
-        <Select/>
+        <Select user={this.state.user} onSubmit={this.add_query}/>
       </div>
     )
 

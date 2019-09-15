@@ -3,6 +3,8 @@
 #########################
 import json, datetime, flask, pymongo, dns
 from flask import request, url_for, jsonify
+from yelpapi import YelpAPI
+from collections import Counter
 from flask_api import FlaskAPI, status, exceptions
 from flask_cors import CORS, cross_origin
 from constants import *
@@ -10,6 +12,7 @@ from constants import *
 
 app = FlaskAPI(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+yelp_api = YelpAPI(API_KEY)
 
 
 #########################
@@ -18,7 +21,9 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 client = pymongo.MongoClient(MONGO_URL)
 db = client['Eatar_test'] # Database Name
-users = db['users'] # Collection name
+users = db['users'] # User Collection
+queries = db['query'] # Query Collection
+
 
 """
 Compare two string values;
@@ -82,6 +87,98 @@ def auth_user_data(request):
         return ('User Authenticfication Failed: Incorrect Credentials', 400)
     return ('User Authenticfication Successful', 201)
 
+"""
+query_user_data: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def query_user_data(request):
+
+    query = dict()
+    print(request.get_json(force=True))
+    for key in QUERY_KEYS:
+        query[key] = request.get_json(force=True)[key]
+
+    result = queries.insert_one(query)
+    if not result.inserted_id:
+        return ('Query Operartion Failed', 400)
+    return ('Successfuly Pushed Query', 201)
+
+"""
+get_query_data: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def get_query_data(request):
+
+    res = []
+    id = request.get_json(force=True)['group_id']
+    groups = queries.find({'group_id' : id})
+    for val in groups:
+        res.append(val)
+    print(len(res))
+    return jsonify(len(res))
+
+
+"""
+exec_query: request -> response
+REQUIRES: True
+ENSURES: Produces json string from request
+"""
+def exec_query(request):
+
+    res = []
+    id = request.get_json(force=True)['group_id']
+    groups = queries.find({'group_id' : id})
+    print(request)
+    for val in groups:
+        res.append(val)
+    print(res)
+    return exec_yelp_query(res)
+
+
+
+def exec_yelp_query(list):
+    counter = Counter()
+    trackers = {}
+    for item in list:
+        results1 = None
+        results2 = None
+        results3 = None
+        if item['location'] is None:
+            results1 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant", attributes='deals')
+            results2 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant")
+            results3 = yelp_api.search_query(latitude = item['latitude'], longitude = item['longitude'], limit = 50, term="restaurant", attributes='hot_and_new')
+        else:
+            results1 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant", attributes='deals')
+            results2 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant")
+            results3 = yelp_api.search_query(location=item['location'], limit = 50, term="restaurant", attributes='hot_and_new')
+
+        for item in results1["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+        for item in results2["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+        for item in results3["businesses"]:
+            if item['name'] not in trackers:
+                trackers[item['name']] = item
+            counter[item['name']] += 1
+
+    itemMaxValue = max(counter.items(), key=lambda x: x[1])
+
+    listOfKeys = []
+    for key, value in counter.items():
+        if value == itemMaxValue[1]:
+            listOfKeys.append(trackers[key])
+    result = []
+    for item in listOfKeys:
+        price = item['price'] if 'price' in item else 'N/A'
+        result.append({'name':item['name'], 'rating':item['rating'], 'price':price , 'address':item['location']['display_address']})
+    print(result)
+    return jsonify(result)
 
 
 #########################
@@ -116,6 +213,45 @@ def authUser():
     if request.method == "POST":
         (result, status) = auth_user_data(request)
         return jsonify(result), status # HTTP Status Created [201]
+
+@app.route('/query', methods=['POST'])
+@cross_origin()
+def queryUser():
+    """
+    authenticate user in the database
+    """
+    if request.method == "POST":
+        (result, status) = query_user_data(request)
+        return jsonify(result), status # HTTP Status Created [201]
+
+@app.route('/queries', methods=['POST'])
+@cross_origin()
+def getUserQueries():
+    """
+    get number of users in group_id
+    """
+    if request.method == "POST":
+        result = get_query_data(request)
+        if result:
+            status = 200
+        else:
+            status = 400
+        return result, status # HTTP Status Created [201]
+
+@app.route('/execute_query', methods=['POST'])
+@cross_origin()
+def execQuery():
+    """
+    execute search query database
+    """
+
+    if request.method == "POST":
+        result = exec_query(request)
+        if result:
+            status = 200
+        else:
+            status = 400
+        return result, status # HTTP Status Created [201]
 
 
 #########################
